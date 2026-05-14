@@ -781,7 +781,7 @@ export default function App() {
                 <div className="flex items-center justify-center py-6 px-10 border-b border-neutral-50 bg-neutral-50/30">
                   <div className="flex items-center gap-4 md:gap-16 w-full max-w-5xl justify-between">
                     {activeTab === "gov" ? (
-                      <div className="flex items-center gap-8 w-full">
+                      <div className="flex items-center justify-between w-full gap-4">
                         <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-neutral-200 shadow-sm">
                           <button 
                             onClick={() => setGovMode("reply")}
@@ -796,7 +796,22 @@ export default function App() {
                             Noting Sheet
                           </button>
                         </div>
-                        <div className="hidden lg:block flex-1 text-center font-black text-neutral-300 text-[10px] uppercase tracking-[0.4em]">Administrative Authority Mode</div>
+
+                        <div className="flex items-center gap-3 bg-orange-50/50 px-6 py-2.5 rounded-2xl border border-orange-100 shadow-sm group hover:border-orange-300 transition-all">
+                          <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest hidden sm:block">Drafting Language:</span>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={targetLang}
+                              onChange={(e) => setTargetLang(e.target.value as SupportedLanguage)}
+                              className="bg-transparent text-sm font-black text-neutral-800 hover:text-orange-600 cursor-pointer outline-none min-w-[100px] transition-colors appearance-none"
+                            >
+                              {LANGUAGES.map(lang => (
+                                <option key={lang} value={lang}>{lang}</option>
+                              ))}
+                            </select>
+                            <Languages className="w-4 h-4 text-orange-400" />
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <>
