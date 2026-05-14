@@ -1,6 +1,6 @@
 {
   "name": "Translator.com",
   "description": "Professional multi-modal translator for English, Hindi, and Urdu. Translate text, images, and PDFs with high accuracy.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": []
 }

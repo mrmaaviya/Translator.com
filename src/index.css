@@ -11,6 +11,69 @@
   
   --shadow-mega: 0 40px 80px -15px rgba(0, 0, 0, 0.12);
   --shadow-pro: 0 25px 50px -12px rgba(37, 99, 235, 0.2);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse-slow 8s ease-in-out infinite;
+}
+
+.perspective-2000 {
+  perspective: 2000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.rotate-3d {
+  transform: rotateY(15deg) rotateX(10deg);
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.shadow-3d {
+  box-shadow: 
+    -20px 20px 60px rgba(0, 0, 0, 0.05),
+    20px -20px 60px rgba(255, 255, 255, 0.8),
+    0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.depth-card {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+}
+
+.depth-card:hover {
+  transform: translateZ(20px) rotateX(2deg) rotateY(-2deg);
+}
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.1); }
+  }
+
+.bg-mesh {
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(37, 99, 235, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(249, 115, 22, 0.15) 0px, transparent 50%);
+}
+
+.text-glow {
+  text-shadow: 0 0 30px rgba(37, 99, 235, 0.2);
+}
+
+.glass-dark {
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 body {
@@ -48,6 +111,74 @@ textarea {
 
 .gradient-orange {
   background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.markdown-body {
+  @apply text-base leading-relaxed;
+}
+
+.markdown-body h1 {
+  @apply text-2xl font-black mb-4 mt-6;
+}
+
+.markdown-body h2 {
+  @apply text-xl font-black mb-3 mt-5;
+}
+
+.markdown-body h3 {
+  @apply text-lg font-bold mb-2 mt-4;
+}
+
+.markdown-body p {
+  @apply mb-4;
+}
+
+.markdown-body ul, .markdown-body ol {
+  @apply mb-4 pl-6;
+}
+
+.markdown-body ul {
+  @apply list-disc;
+}
+
+.markdown-body ol {
+  @apply list-decimal;
+}
+
+.markdown-body li {
+  @apply mb-1;
+}
+
+.markdown-body blockquote {
+  @apply border-l-4 border-neutral-200 pl-4 italic my-4;
+}
+
+.markdown-body code {
+  @apply bg-neutral-100 px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+.markdown-body pre {
+  @apply bg-neutral-100 p-4 rounded-xl overflow-x-auto my-4;
+}
+
+.markdown-body pre code {
+  @apply bg-transparent p-0;
+}
+
+.markdown-body table {
+  @apply w-full border-collapse mb-4;
+}
+
+.markdown-body th, .markdown-body td {
+  @apply border border-neutral-200 px-4 py-2 text-left;
+}
+
+.markdown-body th {
+  @apply bg-neutral-50 font-bold;
+}
+
+.markdown-body a {
+  @apply text-blue-600 underline hover:text-blue-800;
 }
 
 ::-webkit-scrollbar {
