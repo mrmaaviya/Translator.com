@@ -32,6 +32,7 @@ import {
   translateText, 
   translateFile, 
   generateGovResponse,
+  generateDraftFromInstruction,
   LANGUAGES, 
   SupportedLanguage 
 } from "./services/geminiService";
@@ -57,6 +58,7 @@ export default function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [activeTab, setActiveTab] = useState<AppTab>("text");
   const [govMode, setGovMode] = useState<"reply" | "noting">("reply");
+  const [govInputMethod, setGovInputMethod] = useState<"file" | "text">("file");
   const [sourceLang, setSourceLang] = useState<SupportedLanguage>("English");
   const [targetLang, setTargetLang] = useState<SupportedLanguage>("Urdu");
   const [inputText, setInputText] = useState("");
@@ -104,6 +106,7 @@ export default function App() {
           if (draft.sourceLang) setSourceLang(draft.sourceLang as SupportedLanguage);
           if (draft.targetLang) setTargetLang(draft.targetLang as SupportedLanguage);
           if (draft.govMode) setGovMode(draft.govMode as any);
+          if (draft.govInputMethod) setGovInputMethod(draft.govInputMethod as any);
           if (draft.fileInstruction) setFileInstruction(draft.fileInstruction);
         }
 
@@ -127,6 +130,7 @@ export default function App() {
           sourceLang,
           targetLang,
           govMode: activeTab === 'gov' ? govMode : undefined,
+          govInputMethod: activeTab === 'gov' ? govInputMethod : undefined,
           fileInstruction: (activeTab === 'gov' || activeTab === 'image' || activeTab === 'pdf') ? fileInstruction : undefined
         });
         setIsSavingDraft(false);
@@ -230,15 +234,21 @@ export default function App() {
   }, [previewUrl]);
 
   const processFile = async () => {
-    if (!selectedFile) return;
+    if (govInputMethod === "file" && !selectedFile) return;
+    if (govInputMethod === "text" && !fileInstruction.trim()) return;
 
     setIsLoading(true);
     try {
-      const base64 = await fileToBase64(selectedFile);
       let result = "";
       if (activeTab === "gov") {
-        result = await generateGovResponse(base64, selectedFile.type, govMode, targetLang, fileInstruction);
-      } else {
+        if (govInputMethod === "file" && selectedFile) {
+          const base64 = await fileToBase64(selectedFile);
+          result = await generateGovResponse(base64, selectedFile.type, govMode, targetLang, fileInstruction);
+        } else {
+          result = await generateDraftFromInstruction(govMode === "reply" ? "letter" : "noting", targetLang, fileInstruction);
+        }
+      } else if (selectedFile) {
+        const base64 = await fileToBase64(selectedFile);
         result = await translateFile(base64, selectedFile.type, targetLang, fileInstruction);
       }
       setOutputText(result);
@@ -246,12 +256,13 @@ export default function App() {
       if (user) {
         await saveTranslation({
           type: activeTab,
-          sourceText: fileInstruction || "(File processed)",
+          sourceText: fileInstruction || (selectedFile ? "(File processed)" : ""),
           resultText: result,
           targetLang,
-          fileName: selectedFile.name,
-          fileType: selectedFile.type,
-          govMode: activeTab === 'gov' ? govMode : undefined
+          fileName: selectedFile?.name,
+          fileType: selectedFile?.type,
+          govMode: activeTab === 'gov' ? govMode : undefined,
+          inputMethod: activeTab === 'gov' ? govInputMethod : undefined
         });
         fetchHistory();
       }
@@ -260,7 +271,7 @@ export default function App() {
       setTimeout(() => setShowFeedbackModal(true), 1500);
     } catch (error) {
       console.error(error);
-      setOutputText("Error processing file. Please try again.");
+      setOutputText("Error processing request. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -815,37 +826,59 @@ export default function App() {
                 <div className="flex items-center justify-center py-6 px-10 border-b border-neutral-50 bg-neutral-50/30">
                   <div className="flex items-center gap-4 md:gap-16 w-full max-w-5xl justify-between">
                     {activeTab === "gov" ? (
-                      <div className="flex items-center justify-between w-full gap-4">
-                        <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-neutral-200 shadow-sm">
-                          <button 
-                            onClick={() => setGovMode("reply")}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${govMode === "reply" ? "bg-orange-600 text-white shadow-lg shadow-orange-200" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
-                          >
-                            Official Draft
-                          </button>
-                          <button 
-                            onClick={() => setGovMode("noting")}
-                            className={`px-8 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${govMode === "noting" ? "bg-orange-600 text-white shadow-lg shadow-orange-200" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
-                          >
-                            Noting Sheet
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-3 bg-orange-50/50 px-6 py-2.5 rounded-2xl border border-orange-100 shadow-sm group hover:border-orange-300 transition-all">
-                          <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest hidden sm:block">Drafting Language:</span>
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={targetLang}
-                              onChange={(e) => setTargetLang(e.target.value as SupportedLanguage)}
-                              className="bg-transparent text-sm font-black text-neutral-800 hover:text-orange-600 cursor-pointer outline-none min-w-[100px] transition-colors appearance-none"
+                      <div className="flex flex-col w-full gap-4">
+                        <div className="flex flex-col md:flex-row items-center justify-between w-full gap-4">
+                          <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-neutral-200 shadow-sm">
+                            <button 
+                              onClick={() => setGovMode("reply")}
+                              className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${govMode === "reply" ? "bg-orange-600 text-white shadow-lg shadow-orange-200" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
                             >
-                              {LANGUAGES.map(lang => (
-                                <option key={lang} value={lang}>{lang}</option>
-                              ))}
-                            </select>
-                            <Languages className="w-4 h-4 text-orange-400" />
+                              Official Draft
+                            </button>
+                            <button 
+                              onClick={() => setGovMode("noting")}
+                              className={`px-6 py-2.5 rounded-xl text-[10px] font-black transition-all uppercase tracking-widest ${govMode === "noting" ? "bg-orange-600 text-white shadow-lg shadow-orange-200" : "text-neutral-400 hover:text-neutral-600 hover:bg-neutral-50"}`}
+                            >
+                              Noting Sheet
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 bg-neutral-100 p-1 rounded-2xl">
+                            <button 
+                              onClick={() => setGovInputMethod("file")}
+                              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${govInputMethod === "file" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-400 hover:text-neutral-600"}`}
+                            >
+                              Upload Letter
+                            </button>
+                            <button 
+                              onClick={() => setGovInputMethod("text")}
+                              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${govInputMethod === "text" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-400 hover:text-neutral-600"}`}
+                            >
+                              Direct Instructions
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-3 bg-orange-50/50 px-6 py-2.5 rounded-2xl border border-orange-100 shadow-sm group hover:border-orange-300 transition-all">
+                            <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest hidden sm:block">Language:</span>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={targetLang}
+                                onChange={(e) => setTargetLang(e.target.value as SupportedLanguage)}
+                                className="bg-transparent text-sm font-black text-neutral-800 hover:text-orange-600 cursor-pointer outline-none min-w-[100px] transition-colors appearance-none"
+                              >
+                                {LANGUAGES.map(lang => (
+                                  <option key={lang} value={lang}>{lang}</option>
+                                ))}
+                              </select>
+                              <Languages className="w-4 h-4 text-orange-400" />
+                            </div>
                           </div>
                         </div>
+                        {govInputMethod === "text" && (
+                          <div className="px-2">
+                            <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-1">DRAFTING INSTRUCTIONS IN HINDI/URDU/ENGLISH:</p>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <>
@@ -917,6 +950,34 @@ export default function App() {
                               <span className="text-[9px] font-bold uppercase tracking-widest">Saving...</span>
                             </motion.div>
                           )}
+                        </motion.div>
+                      ) : activeTab === "gov" && govInputMethod === "text" ? (
+                        <motion.div
+                          key="gov-text-input"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="flex-1 flex flex-col pt-2"
+                        >
+                          <textarea
+                            value={fileInstruction}
+                            onChange={(e) => setFileInstruction(e.target.value)}
+                            placeholder={targetLang === "Urdu" ? "ڈرافٹ بنانے کے لیے ہدایات یہاں لکھیں... مثلاً: 'میونسپل کمشنر کے نام ایک خط لکھیں پانی کے مسائل کے بارے میں'" : targetLang === "Hindi" ? "ड्राफ्ट बनाने के लिए निर्देश यहाँ लिखें... जैसे: 'पानी की समस्या के बारे में नगर आयुक्त को एक पत्र लिखें'" : "Write instructions for drafting... e.g. 'Write a letter to the Municipal Commissioner about water issues'"}
+                            dir={targetLang === "Urdu" ? "rtl" : "ltr"}
+                            className={`flex-1 w-full min-h-[350px] text-2xl font-normal resize-none focus:outline-none placeholder:text-neutral-200 transition-all leading-relaxed ${targetLang === "Urdu" ? "font-urdu" : ""}`}
+                          />
+                          <button 
+                            onClick={processFile}
+                            disabled={isLoading || !fileInstruction.trim()}
+                            className={`mt-4 py-5 rounded-3xl text-sm font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 bg-neutral-900 text-white ${isLoading || !fileInstruction.trim() ? "opacity-50 cursor-not-allowed" : "hover:bg-black shadow-neutral-200 hover:translate-y-[-2px]"}`}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-5 h-5 text-orange-400" />
+                            )}
+                            {isLoading ? "Generating Draft..." : "Generate Official Draft"}
+                          </button>
                         </motion.div>
                       ) : (
                         <motion.div

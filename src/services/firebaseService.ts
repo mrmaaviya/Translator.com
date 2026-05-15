@@ -113,6 +113,7 @@ export const saveTranslation = async (data: {
   fileName?: string;
   fileType?: string;
   govMode?: string;
+  inputMethod?: string;
 }) => {
   if (!auth.currentUser) return;
   
@@ -194,6 +195,7 @@ export const saveDraft = async (data: {
   sourceLang: string;
   targetLang: string;
   govMode?: string;
+  govInputMethod?: string;
   fileInstruction?: string;
 }) => {
   if (!auth.currentUser) return;
