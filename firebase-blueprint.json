@@ -44,6 +44,22 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["rating", "createdAt"]
+    },
+    "Draft": {
+      "title": "Draft",
+      "description": "Auto-saved draft of current working text or file processing settings",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "activeTab": { "type": "string" },
+        "inputText": { "type": "string" },
+        "sourceLang": { "type": "string" },
+        "targetLang": { "type": "string" },
+        "govMode": { "type": "string" },
+        "fileInstruction": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "updatedAt"]
     }
   },
   "firestore": {
@@ -58,6 +74,10 @@
     "/feedback/{feedbackId}": {
       "schema": "Feedback",
       "description": "User feedback"
+    },
+    "/drafts/{draftId}": {
+      "schema": "Draft",
+      "description": "User drafts"
     }
   }
 }

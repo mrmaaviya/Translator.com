@@ -187,3 +187,36 @@ export const saveFeedback = async (data: {
     handleFirestoreError(error, OperationType.CREATE, path);
   }
 };
+
+export const saveDraft = async (data: {
+  activeTab: string;
+  inputText: string;
+  sourceLang: string;
+  targetLang: string;
+  govMode?: string;
+  fileInstruction?: string;
+}) => {
+  if (!auth.currentUser) return;
+  const path = `drafts/${auth.currentUser.uid}`;
+  try {
+    await setDoc(doc(db, 'drafts', auth.currentUser.uid), {
+      ...data,
+      userId: auth.currentUser.uid,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+};
+
+export const getLatestDraft = async () => {
+  if (!auth.currentUser) return null;
+  const path = `drafts/${auth.currentUser.uid}`;
+  try {
+    const draftDoc = await getDoc(doc(db, 'drafts', auth.currentUser.uid));
+    return draftDoc.exists() ? draftDoc.data() : null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+    return null;
+  }
+};

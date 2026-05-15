@@ -43,7 +43,9 @@ import {
   getTranslationHistory, 
   deleteTranslation,
   getUserData,
-  saveFeedback
+  saveFeedback,
+  saveDraft,
+  getLatestDraft
 } from "./services/firebaseService";
 import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
 
@@ -75,6 +77,7 @@ export default function App() {
   const [feedbackType, setFeedbackType] = useState<'accuracy' | 'suggestion'>('accuracy');
   const [lastTranslationId, setLastTranslationId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,6 +95,18 @@ export default function App() {
         if (userData) {
           setIsPro(userData.isPro || false);
         }
+        
+        // Load latest draft
+        const draft = await getLatestDraft();
+        if (draft) {
+          if (draft.activeTab) setActiveTab(draft.activeTab as AppTab);
+          if (draft.inputText) setInputText(draft.inputText);
+          if (draft.sourceLang) setSourceLang(draft.sourceLang as SupportedLanguage);
+          if (draft.targetLang) setTargetLang(draft.targetLang as SupportedLanguage);
+          if (draft.govMode) setGovMode(draft.govMode as any);
+          if (draft.fileInstruction) setFileInstruction(draft.fileInstruction);
+        }
+
         fetchHistory();
       } else {
         setIsPro(false);
@@ -100,6 +115,25 @@ export default function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (user && (inputText || fileInstruction)) {
+      setIsSavingDraft(true);
+      const timer = setTimeout(async () => {
+        await saveDraft({
+          activeTab,
+          inputText,
+          sourceLang,
+          targetLang,
+          govMode: activeTab === 'gov' ? govMode : undefined,
+          fileInstruction: (activeTab === 'gov' || activeTab === 'image' || activeTab === 'pdf') ? fileInstruction : undefined
+        });
+        setIsSavingDraft(false);
+      }, 2000); // Debounce auto-save
+      return () => clearTimeout(timer);
+    }
+  }, [user, activeTab, inputText, sourceLang, targetLang, govMode, fileInstruction]);
 
   const fetchHistory = async () => {
     const data = await getTranslationHistory();
@@ -873,6 +907,16 @@ export default function App() {
                             dir={sourceLang === "Urdu" ? "rtl" : "ltr"}
                             className={`flex-1 w-full min-h-[350px] text-3xl font-normal resize-none focus:outline-none placeholder:text-neutral-200 transition-all leading-tight ${sourceLang === "Urdu" ? "font-urdu" : ""}`}
                           />
+                          {isSavingDraft && (
+                            <motion.div 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="absolute bottom-2 left-8 flex items-center gap-2 text-neutral-300 pointer-events-none"
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full bg-blue-300 animate-pulse" />
+                              <span className="text-[9px] font-bold uppercase tracking-widest">Saving...</span>
+                            </motion.div>
+                          )}
                         </motion.div>
                       ) : (
                         <motion.div
@@ -939,6 +983,12 @@ export default function App() {
                                   <div className="absolute top-3 right-3">
                                     <Mic className="w-3.5 h-3.5 text-neutral-300" />
                                   </div>
+                                  {isSavingDraft && (
+                                    <div className="absolute bottom-2 right-4 flex items-center gap-1.5 text-neutral-300">
+                                      <div className="w-1 h-1 rounded-full bg-blue-300 animate-pulse" />
+                                      <span className="text-[8px] font-bold uppercase tracking-widest">Draft Saved</span>
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="flex items-center gap-3">
