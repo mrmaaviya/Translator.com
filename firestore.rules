@@ -56,13 +56,13 @@ service cloud.firestore {
 
     function isValidFeedback(data) {
       return data.keys().hasAll(['rating', 'createdAt']) &&
-             data.keys().size() <= 6 &&
+             data.keys().size() <= 10 &&
              data.rating is number && data.rating >= 1 && data.rating <= 5 &&
              data.createdAt == request.time &&
-             (data.get('userId', '') == (isSignedIn() ? request.auth.uid : '')) &&
-             (data.get('comment', '') is string && data.comment.size() <= 2000) &&
-             (data.get('type', '') in ['accuracy', 'suggestion', '']) &&
-             (data.get('translationId', '') is string && data.translationId.size() <= 128);
+             (data.get('userId', null) == (isSignedIn() ? request.auth.uid : null)) &&
+             (!data.keys().hasAll(['comment']) || data.comment == null || (data.comment is string && data.comment.size() <= 2000)) &&
+             (!data.keys().hasAll(['type']) || data.type == null || (data.type in ['accuracy', 'suggestion'])) &&
+             (!data.keys().hasAll(['translationId']) || data.translationId == null || (data.translationId is string && data.translationId.size() <= 128));
     }
 
     // 1. Users Collection
